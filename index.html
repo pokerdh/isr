@@ -646,7 +646,7 @@ fbq('track', 'PageView');
 <nav class="nav">
   <div class="container nav-inner">
     <a href="/" class="logo">Poker<em>Deals</em>Hub</a>
-    <a href="https://t.me/pdh_support_bot" class="nav-cta tg-link" target="_blank" rel="noopener">
+    <a href="https://t.me/pdh_support_bot" class="nav-cta tg-link" data-cta-location="nav" target="_blank" rel="noopener">
       <svg viewBox="0 0 24 24" fill="currentColor"><path d="M9.78 18.65l.28-4.23 7.68-6.92c.34-.31-.07-.46-.52-.19L7.74 13.3 3.64 12c-.88-.25-.89-.86.2-1.3l15.97-6.16c.73-.33 1.43.18 1.15 1.3l-2.72 12.81c-.19.91-.74 1.13-1.5.71L12.6 16.3l-1.99 1.93c-.23.23-.42.42-.83.42z"/></svg>
       Telegram
     </a>
@@ -670,7 +670,7 @@ fbq('track', 'PageView');
         PokerDealsHub — רשת פרטית של דילים ב-PPPoker, ClubGG, X-Poker ו-PokerBros. שולחנות רכים עם רקרייישונלים, עיבוד תשלומים אמין, משיכות תוך 24 שעות. הכל בטלגרם — בלי טפסים, בלי הרשמות, בלי "להשאיר פרטים".
       </p>
       <div class="cta-row">
-        <a href="https://t.me/pdh_support_bot" class="btn-primary tg-link" target="_blank" rel="noopener">
+        <a href="https://t.me/pdh_support_bot" class="btn-primary tg-link" data-cta-location="hero" target="_blank" rel="noopener">
           <svg viewBox="0 0 24 24" fill="currentColor"><path d="M9.78 18.65l.28-4.23 7.68-6.92c.34-.31-.07-.46-.52-.19L7.74 13.3 3.64 12c-.88-.25-.89-.86.2-1.3l15.97-6.16c.73-.33 1.43.18 1.15 1.3l-2.72 12.81c-.19.91-.74 1.13-1.5.71L12.6 16.3l-1.99 1.93c-.23.23-.42.42-.83.42z"/></svg>
           קבלו דיל בטלגרם
           <span class="arrow">←</span>
@@ -760,20 +760,55 @@ fbq('track', 'PageView');
 
 <!-- ============ MOBILE STICKY CTA ============ -->
 <div class="mobile-cta">
-  <a href="https://t.me/pdh_support_bot" class="tg-link" target="_blank" rel="noopener">
+  <a href="https://t.me/pdh_support_bot" class="tg-link" data-cta-location="mobile_sticky" target="_blank" rel="noopener">
     <svg viewBox="0 0 24 24" fill="currentColor"><path d="M9.78 18.65l.28-4.23 7.68-6.92c.34-.31-.07-.46-.52-.19L7.74 13.3 3.64 12c-.88-.25-.89-.86.2-1.3l15.97-6.16c.73-.33 1.43.18 1.15 1.3l-2.72 12.81c-.19.91-.74 1.13-1.5.71L12.6 16.3l-1.99 1.93c-.23.23-.42.42-.83.42z"/></svg>
     קבלו דיל בטלגרם
   </a>
 </div>
 
+<!-- ============ META PIXEL: LEAD TRACKING ON CTA CLICKS ============ -->
 <script>
+(function() {
+  // Уникальный ID события — для дедупликации, если позже подключишь Conversion API на сервере
+  function generateEventID() {
+    return 'lead_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+  }
+
+  // Определяем, откуда именно кликнули (data-cta-location)
+  function getLocation(el) {
+    return el.getAttribute('data-cta-location') || 'unknown';
+  }
+
+  // Отправка Lead-события в Facebook Pixel
+  function fireLead(el) {
+    if (typeof fbq === 'undefined') {
+      // Пиксель не успел загрузиться — тихо выходим
+      return;
+    }
+    var location = getLocation(el);
+    var eventID = generateEventID();
+
+    fbq('track', 'Lead', {
+      content_name: 'telegram_cta_' + location, // telegram_cta_nav / _hero / _mobile_sticky
+      content_category: location,
+      currency: 'USD',
+      value: 500.00 // ценность лида для оптимизации кампаний
+    }, { eventID: eventID });
+
+    // Раскомментируй для отладки в консоли:
+    // console.log('[FB Pixel] Lead fired', { location: location, eventID: eventID });
+  }
+
+  // Вешаем обработчик на все ссылки с классом tg-link
   document.querySelectorAll('a.tg-link').forEach(function(a) {
-    a.addEventListener('click', function() {
-      if (typeof fbq !== 'undefined') {
-        fbq('track', 'Lead', { content_name: 'telegram_cta_he' });
-      }
-    });
+    // pointerdown ловит клик РАНЬШЕ чем click — надёжнее для случаев,
+    // когда браузер может успеть увести пользователя со страницы
+    a.addEventListener('pointerdown', function() { fireLead(a); }, { passive: true });
+
+    // click как fallback — на случай, если pointerdown не сработал (клавиатура, ассистивные технологии)
+    a.addEventListener('click', function() { fireLead(a); });
   });
+})();
 </script>
 
 </body>
